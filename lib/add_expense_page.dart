@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import './types.dart';
-import './my_spend_db.dart';
+import './utils.dart';
+import './my_expenses_db.dart';
 
-class AddingExpensesPage extends StatefulWidget {
+class AddExpensePage extends StatefulWidget {
     @override
-    _AddingExpensesPageState createState() => _AddingExpensesPageState();
+    _AddExpensePageState createState() => _AddExpensePageState();
 }
 
-class _AddingExpensesPageState extends State<AddingExpensesPage> with SingleTickerProviderStateMixin {
-    final Text _title = Text('Adding expenses');
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    SpentModel _spent = SpentModel();
-    SpentMeaning _spentMeaning = SpentMeaning.exits;
+class _AddExpensePageState extends State<AddExpensePage> with SingleTickerProviderStateMixin {
+    final Text _title = Text('Add expense');
+    final GlobalKey<FormState> _formKey = GlobalKey();
+    ExpenseModel _expense = ExpenseModel();
+    ExpenseMeaning _expenseMeaning = ExpenseMeaning.EXITS;
 
     @override
     void initState() {
@@ -42,7 +42,7 @@ class _AddingExpensesPageState extends State<AddingExpensesPage> with SingleTick
                         ListTile(
                             leading: IconButton(
                                 icon: () {
-                                    if (_spentMeaning == SpentMeaning.entered) {
+                                    if (_expenseMeaning == ExpenseMeaning.ENTERED) {
                                         return Icon(
                                             Icons.arrow_upward,
                                             color: Colors.green
@@ -56,23 +56,23 @@ class _AddingExpensesPageState extends State<AddingExpensesPage> with SingleTick
                                 }(),
                                 onPressed: () {
                                     setState(() {
-                                        if (_spentMeaning == SpentMeaning.entered) {
-                                            _spentMeaning = SpentMeaning.exits;
+                                        if (_expenseMeaning == ExpenseMeaning.ENTERED) {
+                                            _expenseMeaning = ExpenseMeaning.EXITS;
                                             return;
                                         }
 
-                                        _spentMeaning = SpentMeaning.entered;
+                                        _expenseMeaning = ExpenseMeaning.ENTERED;
                                     });
                                 },
                             ),
                             title: TextFormField(
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
-                                    hintText: 'Amout'
+                                    labelText: 'Amout'
                                 ),
                                 onSaved: (String value) {
                                     try {
-                                        _spent.amount = double.tryParse(value);
+                                        _expense.amount = double.tryParse(value);
                                     } catch (e) {
                                         print(e);
                                     }
@@ -82,10 +82,10 @@ class _AddingExpensesPageState extends State<AddingExpensesPage> with SingleTick
                         ListTile(
                             title: TextFormField(
                                 decoration: InputDecoration(
-                                    hintText: 'Description',
+                                    labelText: 'Description',
                                 ),
                                 onSaved: (String value) {
-                                    _spent.description = value;
+                                    _expense.description = value;
                                 },
                                 keyboardType: TextInputType.multiline,
                                 maxLines: 2,
@@ -99,9 +99,9 @@ class _AddingExpensesPageState extends State<AddingExpensesPage> with SingleTick
 
     void _save() {
         _formKey.currentState.save();
-        _spent.amount *= _spentMeaning == SpentMeaning.entered ? 1 : -1;
+        _expense.amount *= _expenseMeaning == ExpenseMeaning.ENTERED ? 1 : -1;
 
-        addSpent(_spent)
+        addExpense(_expense)
         .then((int id) {
             Navigator.pop(context, id);
         })

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
-import './spending_page.dart';
-import './adding_expenses_page.dart';
+import './expenses_page.dart';
+import './add_expense_page.dart';
+import './utils.dart';
 
 class App extends StatelessWidget {
     final ThemeData _theme = new ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.indigo,
     );
 
     @override
     Widget build(BuildContext context) => new MaterialApp(
-        title: 'My spend',
+        title: 'My expenses',
         theme: _theme,
-        home: new SpendingPage(),
+        home: new ExpensesPage(),
         routes: _getRoutes(context),
     );
 
     Map<String, WidgetBuilder> _getRoutes(BuildContext context) => {
-        '/spending': (context) => new SpendingPage(),
-        '/adding_expenses': (context) => new AddingExpensesPage(),
+        Routes.EXPENSES_PAGE: (context) => new ExpensesPage(),
+        Routes.ADD_EXPENSE_PAGE: (context) => new AddExpensePage(),
     };
 }
