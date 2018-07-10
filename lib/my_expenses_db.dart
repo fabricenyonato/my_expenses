@@ -40,31 +40,25 @@ Future<List<ExpenseModel>> getExpenses({
     DateTime date
 }) {
     Completer<List<ExpenseModel>> c = new Completer();
-    String sql = 'SELECT * FROM ${DBTables.EXPENSE} ORDER BY date_ DESC';
+    String sql = 'SELECT * FROM ${DBFields.EXPENSE_TABLE_NAME} ORDER BY ${DBFields.EXPENSE_DATE} DESC';
     List args = [];
 
     if (date != null) {
-        sql = 'SELECT * FROM ${DBTables.EXPENSE} WHERE date(date_)=? ORDER BY date_ DESC';
+        sql = 'SELECT * FROM ${DBFields.EXPENSE_TABLE_NAME} WHERE date(${DBFields.EXPENSE_DATE})=? ORDER BY ${DBFields.EXPENSE_DATE} DESC';
         args = [DateFormat('yyyy-MM-dd').format(date)];
     }
 
     _getDB()
     .then((Database db) {
         db.rawQuery(sql, args)
-        .then((List<Map<String, dynamic>> _spending) {
-            List<ExpenseModel> spending = [];
+        .then((List<Map<String, dynamic>> _expenses) {
+            List<ExpenseModel> expenses = [];
 
-            _spending.forEach((Map<String, dynamic> _spent) {
-                ExpenseModel spent = ExpenseModel();
-                spent.id = _spent['id'];
-                spent.amount = _spent['amount'];
-                spent.date = DateTime.parse(_spent['date_']);
-                spent.description = _spent['description'].toString();
-
-                spending.add(spent);
+            _expenses.forEach((Map<String, dynamic> expense) {
+                expenses.add(ExpenseModel.formMap(expense));
             });
 
-            c.complete(spending);
+            c.complete(expenses);
         })
         .catchError((e) {
             c.completeError(e);
@@ -82,21 +76,14 @@ Future<ExpenseModel> getExpenseById(int id) {
 
     _getDB()
     .then((Database db) {
-        db.rawQuery('SELECT * FROM ${DBTables.EXPENSE} WHERE id=?', [id])
+        db.rawQuery('SELECT * FROM ${DBFields.EXPENSE_TABLE_NAME} WHERE id=?', [id])
         .then((List<Map<String, dynamic>> expenses) {
             if (expenses.length != 1) {
                 c.completeError(null);
                 return;
             }
 
-            final Map<String, dynamic> _expense = expenses[0];
-            ExpenseModel expense = ExpenseModel();
-            expense.id = _expense['id'];
-            expense.amount = _expense['amount'];
-            expense.date = DateTime.parse(_expense['date_']);
-            expense.description = _expense['description'].toString();
-
-            c.complete(expense);
+            c.complete(ExpenseModel.formMap(expenses[0]));
         })
         .catchError((e) {
             c.completeError(e);
@@ -114,7 +101,7 @@ Future<DateTime> getFirstExpenseDate() {
 
     _getDB()
     .then((Database db) {
-        db.rawQuery('SELECT date_ FROM ${DBTables.EXPENSE} ORDER BY date_ ASC LIMIT 1')
+        db.rawQuery('SELECT date_ FROM ${DBFields.EXPENSE_TABLE_NAME} ORDER BY date_ ASC LIMIT 1')
         .then((List<Map<String, dynamic>> expenses) {
             if (expenses.length != 1) {
                 c.completeError(null);
@@ -139,7 +126,7 @@ Future<double> getSolde() {
 
     _getDB()
     .then((Database db) {
-        db.rawQuery('SELECT SUM(amount) AS solde FROM ${DBTables.EXPENSE}')
+        db.rawQuery('SELECT SUM(amount) AS solde FROM ${DBFields.EXPENSE_TABLE_NAME}')
         .then((List<Map<String, dynamic>> expenses) {
             if (expenses.length != 1) {
                 c.completeError(null);
@@ -160,15 +147,21 @@ Future<double> getSolde() {
 }
 
 FutureOr _createDB (Database db, int version) {
-    return db.execute('CREATE TABLE ${DBTables.EXPENSE} (id INTEGER PRIMARY KEY AUTOINCREMENT, amount DOUBLE NOT NULL, description TEXT, date_ DATETIME DEFAULT (datetime(\'now\')))');
+    return db.execute('CREATE TABLE ${DBFields.EXPENSE_TABLE_NAME} (${DBFields.EXPENSE_ID} INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, ${DBFields.EXPENSE_AMOUNT} DOUBLE NOT NULL, ${DBFields.EXPENSE_DESCRPTION} TEXT NOT NULL, ${DBFields.EXPENSE_DATE} DATETIME NOT NULL DEFAULT (datetime(\'now\', \'localtime\')), ${DBFields.EXPENSE_HIDE} INTERGER(1) CHECK(${DBFields.EXPENSE_HIDE} IN (0, 1)) NOT NULL DEFAULT 0)');
 }
 
 Future<int> addExpense(ExpenseModel expense) {
     Completer<int> c = new Completer();
+    String sql = 'INSERT INTO ${DBFields.EXPENSE_TABLE_NAME}(amount, description) VALUES(?, ?)';
+    List args = [expense.amount, expense.description];
+
+    if (expense.hide) {
+        sql = 'INSERT INTO ${DBFields.EXPENSE_TABLE_NAME}(amount, description, hide) VALUES(?, ?, 1)';
+    }
 
     _getDB()
     .then((Database db) {
-        db.rawInsert('INSERT INTO ${DBTables.EXPENSE}(amount, description) VALUES(?, ?)', [expense.amount, expense.description])
+        db.rawInsert(sql, args)
         .then((id) {
             c.complete(id);
         })
@@ -183,3 +176,22 @@ Future<int> addExpense(ExpenseModel expense) {
     return c.future;
 }
 
+Future<int> updateExpense(ExpenseModel expense) {
+    Completer<int> c = new Completer();
+
+    _getDB()
+    .then((Database db) {
+        db.rawUpdate('UPDATE ${DBFields.EXPENSE_TABLE_NAME} SET amount=?, description=? WHERE id=?', [expense.amount, expense.description, expense.id])
+        .then((id) {
+            c.complete(id);
+        })
+        .catchError((e) {
+            c.completeError(e);
+        });
+    })
+    .catchError((e) {
+        c.completeError(e);
+    });
+
+    return c.future;
+}

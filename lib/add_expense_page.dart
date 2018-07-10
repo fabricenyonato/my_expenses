@@ -71,11 +71,7 @@ class _AddExpensePageState extends State<AddExpensePage> with SingleTickerProvid
                                     labelText: 'Amout'
                                 ),
                                 onSaved: (String value) {
-                                    try {
-                                        _expense.amount = double.tryParse(value);
-                                    } catch (e) {
-                                        print(e);
-                                    }
+                                    _expense.amount = double.parse(value);
                                 },
                             ),
                         ),
@@ -91,6 +87,15 @@ class _AddExpensePageState extends State<AddExpensePage> with SingleTickerProvid
                                 maxLines: 2,
                             ),
                         ),
+                        CheckboxListTile(
+                            title: Text('Hide'),
+                            value: _expense.hide,
+                            onChanged: (bool value) {
+                                setState(() {
+                                    _expense.hide = value;
+                                });
+                            },
+                        )
                     ],
                 ),
             )
